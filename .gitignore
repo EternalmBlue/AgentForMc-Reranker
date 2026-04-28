@@ -7,3 +7,6 @@ build/
 dist/
 release/
 .idea
+/AGENTS.md
+/MEMORY.md
+/TASKS.md
