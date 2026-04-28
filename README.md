@@ -10,7 +10,7 @@ AgentForMc-Reranker 是 AgentForMc 体系里的可选 reranker 中间件。它�
 | --- | --- | --- |
 | Agent4Minecraft | <https://github.com/EternalmBlue/Agent4Minecraft> | Minecraft 插件端，提供 `/askmc`、`/a4m sync`、`/a4m status`，负责游戏内入口、配置扫描、脱敏和 gRPC 上传 |
 | AgentForMc | <https://github.com/EternalmBlue/AgentForMc> | AI 后端，负责 gRPC bridge、DeepAgent、RAG、配置语义记忆、答案生成和同步状态 |
-| AgentForMc-Reranker | <https://github.com/EternalmBlue/AgentForMc-Reranker> | 可选重排中间件，独立加载 BCE reranker 模型并通过 gRPC 给后端返回排序结果 |
+| AgentForMc-Reranker |  | 可选重排中间件，独立加载 BCE reranker 模型并通过 gRPC 给后端返回排序结果 |
 
 整体调用链：
 
@@ -74,7 +74,6 @@ Agent4Minecraft 插件 -> AgentForMc 后端 -> AgentForMc-Reranker 中间件
 ### 1. 克隆仓库
 
 ```powershell
-git clone https://github.com/EternalmBlue/AgentForMc-Reranker.git
 git clone https://github.com/EternalmBlue/AgentForMc.git
 git clone https://github.com/EternalmBlue/Agent4Minecraft.git
 ```
