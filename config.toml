@@ -1,0 +1,13 @@
+[reranker]
+model_name_or_path = "maidalun1020/bce-reranker-base_v1"
+
+[grpc]
+host = "127.0.0.1"
+port = 50052
+max_workers = 2
+
+[runtime]
+request_timeout_seconds = 60
+
+[paths]
+model_cache_dir = ".cache/models"

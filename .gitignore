@@ -1,0 +1,9 @@
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
+.env
+build/
+dist/
+release/
+.idea
