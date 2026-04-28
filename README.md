@@ -1,16 +1,16 @@
 # AgentForMc-Reranker
 
-AgentForMc-Reranker 是 AgentForMc 体系里的可选 reranker 中间件。它把 BCE reranker 模型从主后端 `F:\AgentForMc` 中拆出来，单独作为 gRPC 服务运行。
+AgentForMc-Reranker 是 AgentForMc 体系里的可选 reranker 中间件。它把 BCE reranker 模型从主后端中拆出来，单独作为 gRPC 服务运行。
 
 启用后，主后端仍然负责 Minecraft 问答、RAG 检索、DeepAgent 规划、配置同步和答案生成；本服务只负责对后端传来的候选文档做重排。未启动本服务时，后端会自动降级为原来的 BM25/vector 融合结果，不影响 `/askmc` 基础问答链路。
 
-## 三个仓库的关系
+## 关联仓库
 
-| 仓库 | 本地路径 | 职责 |
+| 仓库 | 地址 | 职责 |
 | --- | --- | --- |
-| Agent4Minecraft | `F:\Agent4Minecraft` | Minecraft 插件端，提供 `/askmc`、`/a4m sync`、`/a4m status`，负责游戏内入口、配置扫描、脱敏和 gRPC 上传 |
-| AgentForMc | `F:\AgentForMc` | AI 后端，负责 gRPC bridge、DeepAgent、RAG、配置语义记忆、答案生成和同步状态 |
-| AgentForMc-Reranker | `F:\AgentForMc-Reranker` | 可选重排中间件，独立加载 BCE reranker 模型并通过 gRPC 给后端返回排序结果 |
+| Agent4Minecraft | <https://github.com/EternalmBlue/Agent4Minecraft> | Minecraft 插件端，提供 `/askmc`、`/a4m sync`、`/a4m status`，负责游戏内入口、配置扫描、脱敏和 gRPC 上传 |
+| AgentForMc | <https://github.com/EternalmBlue/AgentForMc> | AI 后端，负责 gRPC bridge、DeepAgent、RAG、配置语义记忆、答案生成和同步状态 |
+| AgentForMc-Reranker | <https://github.com/EternalmBlue/AgentForMc-Reranker> | 可选重排中间件，独立加载 BCE reranker 模型并通过 gRPC 给后端返回排序结果 |
 
 整体调用链：
 
@@ -71,20 +71,24 @@ Agent4Minecraft 插件 -> AgentForMc 后端 -> AgentForMc-Reranker 中间件
 
 ## 快速开始
 
-### 1. 安装依赖
-
-在本仓库中执行：
+### 1. 克隆仓库
 
 ```powershell
-cd F:\AgentForMc-Reranker
+git clone https://github.com/EternalmBlue/AgentForMc-Reranker.git
+git clone https://github.com/EternalmBlue/AgentForMc.git
+git clone https://github.com/EternalmBlue/Agent4Minecraft.git
+```
+
+### 2. 安装 reranker 依赖
+
+```powershell
+cd AgentForMc-Reranker
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-如果你已经确认另一个虚拟环境包含本项目依赖，也可以用那个解释器运行本服务。
-
-### 2. 配置 token
+### 3. 配置 reranker token
 
 复制环境变量模板：
 
@@ -98,9 +102,9 @@ Copy-Item .env.example .env
 RAG_RERANKER_GRPC_AUTH_TOKEN="change_me_to_a_strong_token"
 ```
 
-这个 token 必须和 `F:\AgentForMc` 后端进程里的 `RAG_RERANKER_GRPC_AUTH_TOKEN` 完全一致。它不是 Minecraft 插件的 `backend.authToken`，不要和 `RAG_GRPC_AUTH_TOKEN` 混用。
+这个 token 必须和 AgentForMc 后端进程里的 `RAG_RERANKER_GRPC_AUTH_TOKEN` 完全一致。它不是 Minecraft 插件的 `backend.authToken`，不要和 `RAG_GRPC_AUTH_TOKEN` 混用。
 
-### 3. 自检
+### 4. 自检
 
 ```powershell
 .\.venv\Scripts\python.exe main.py --self-check
@@ -112,7 +116,7 @@ RAG_RERANKER_GRPC_AUTH_TOKEN="change_me_to_a_strong_token"
 reranker self-check ok: 127.0.0.1:50052 model=maidalun1020/bce-reranker-base_v1
 ```
 
-### 4. 启动 reranker 中间件
+### 5. 启动 reranker 中间件
 
 ```powershell
 .\.venv\Scripts\python.exe main.py
@@ -126,13 +130,13 @@ reranker self-check ok: 127.0.0.1:50052 model=maidalun1020/bce-reranker-base_v1
 
 ## 接入 AgentForMc 后端
 
-在 `F:\AgentForMc\.env` 中加入和本服务一致的 token：
+在 AgentForMc 后端的 `.env` 中加入和本服务一致的 token：
 
 ```dotenv
 RAG_RERANKER_GRPC_AUTH_TOKEN="change_me_to_a_strong_token"
 ```
 
-在 `F:\AgentForMc\config.toml` 中开启 reranker：
+在 AgentForMc 后端的 `config.toml` 中开启 reranker：
 
 ```toml
 [reranker]
@@ -144,9 +148,9 @@ timeout_seconds = 10
 
 然后按顺序启动：
 
-1. 启动 `AgentForMc-Reranker`
-2. 启动 `AgentForMc`
-3. 启动 Paper / Spigot 服务端，让 `Agent4Minecraft` 插件连接后端
+1. 启动 AgentForMc-Reranker
+2. 启动 AgentForMc
+3. 启动 Paper / Spigot 服务端，让 Agent4Minecraft 插件连接后端
 
 后端到 reranker 的连接失败时，后端会记录失败并继续使用 BM25/vector 融合结果。
 
@@ -154,7 +158,7 @@ timeout_seconds = 10
 
 插件端不需要知道 reranker 的存在，也不需要改 proto 或命令。
 
-插件仍然只连接 `AgentForMc`：
+插件仍然只连接 AgentForMc：
 
 ```yaml
 backend:
@@ -163,7 +167,7 @@ backend:
   port: 50051
 ```
 
-这里的 `backend.authToken` 必须匹配 `F:\AgentForMc\.env` 里的：
+这里的 `backend.authToken` 必须匹配 AgentForMc 后端 `.env` 里的：
 
 ```dotenv
 RAG_GRPC_AUTH_TOKEN="change_me_to_a_strong_token"
@@ -173,20 +177,22 @@ RAG_GRPC_AUTH_TOKEN="change_me_to_a_strong_token"
 
 | Token | 用途 | 配置位置 |
 | --- | --- | --- |
-| `RAG_GRPC_AUTH_TOKEN` | Agent4Minecraft 插件调用 AgentForMc 后端 | `F:\AgentForMc\.env` 和插件 `backend.authToken` |
-| `RAG_RERANKER_GRPC_AUTH_TOKEN` | AgentForMc 后端调用 AgentForMc-Reranker | `F:\AgentForMc\.env` 和 `F:\AgentForMc-Reranker\.env` |
+| `RAG_GRPC_AUTH_TOKEN` | Agent4Minecraft 插件调用 AgentForMc 后端 | AgentForMc 后端 `.env` 和插件 `backend.authToken` |
+| `RAG_RERANKER_GRPC_AUTH_TOKEN` | AgentForMc 后端调用 AgentForMc-Reranker | AgentForMc 后端 `.env` 和 AgentForMc-Reranker `.env` |
 
 ## 推荐本地联调顺序
 
-1. 在 `F:\AgentForMc-Reranker` 启动 reranker：
+1. 在 AgentForMc-Reranker 中启动 reranker：
 
 ```powershell
+cd AgentForMc-Reranker
 .\.venv\Scripts\python.exe main.py
 ```
 
-2. 在 `F:\AgentForMc` 启动后端：
+2. 在 AgentForMc 中启动后端：
 
 ```powershell
+cd ..\AgentForMc
 .\.venv\Scripts\python.exe main.py
 ```
 
@@ -244,7 +250,7 @@ agent_for_mc_reranker/interfaces/grpc/reranker.proto
 后端镜像协议文件：
 
 ```text
-F:\AgentForMc\agent_for_mc\interfaces\grpc\reranker.proto
+agent_for_mc/interfaces/grpc/reranker.proto
 ```
 
 服务：
@@ -279,14 +285,14 @@ service RerankerService {
 
 - 本仓库 `reranker.proto`
 - 本仓库生成的 `reranker_pb2.py` 和 `reranker_pb2_grpc.py`
-- 后端仓库 `F:\AgentForMc\agent_for_mc\interfaces\grpc\reranker.proto`
-- 后端仓库生成的 `reranker_pb2.py` 和 `reranker_pb2_grpc.py`
+- AgentForMc 仓库的 `agent_for_mc/interfaces/grpc/reranker.proto`
+- AgentForMc 仓库生成的 `reranker_pb2.py` 和 `reranker_pb2_grpc.py`
 - 两边相关测试
 
 ## 项目结构
 
 ```text
-F:\AgentForMc-Reranker
+.
 ├─ main.py
 ├─ config.toml
 ├─ requirements.txt
@@ -295,7 +301,7 @@ F:\AgentForMc-Reranker
 │  ├─ model.py
 │  ├─ server.py
 │  ├─ service.py
-│  └─ interfaces\grpc
+│  └─ interfaces/grpc
 │     ├─ reranker.proto
 │     ├─ reranker_pb2.py
 │     └─ reranker_pb2_grpc.py
@@ -312,17 +318,11 @@ F:\AgentForMc-Reranker
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-如果本仓库 `.venv` 尚未安装依赖，但 `F:\AgentForMc\.venv` 已经安装了测试依赖，可以临时使用：
-
-```powershell
-F:\AgentForMc\.venv\Scripts\python.exe -m pytest
-```
-
 重新生成 gRPC 代码：
 
 ```powershell
-cd F:\AgentForMc-Reranker\agent_for_mc_reranker\interfaces\grpc
-F:\AgentForMc-Reranker\.venv\Scripts\python.exe -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. reranker.proto
+cd agent_for_mc_reranker\interfaces\grpc
+..\..\..\.venv\Scripts\python.exe -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. reranker.proto
 ```
 
 生成后检查 `reranker_pb2_grpc.py` 的导入应为包内相对导入：
@@ -337,7 +337,7 @@ from . import reranker_pb2 as reranker__pb2
 
 这是预期降级行为。检查：
 
-- `AgentForMc-Reranker` 是否已启动
+- AgentForMc-Reranker 是否已启动
 - 后端 `[reranker].host` 和 `port` 是否正确
 - 两边 `RAG_RERANKER_GRPC_AUTH_TOKEN` 是否一致
 - 防火墙是否允许后端访问 `50052`
@@ -351,7 +351,7 @@ from . import reranker_pb2 as reranker__pb2
 enabled = true
 ```
 
-但 `F:\AgentForMc\.env` 里没有设置：
+但 AgentForMc 后端 `.env` 里没有设置：
 
 ```dotenv
 RAG_RERANKER_GRPC_AUTH_TOKEN="..."
@@ -392,8 +392,8 @@ RAG_RERANKER_GRPC_AUTH_TOKEN="..."
 截至 `2026-04-28`：
 
 - standalone reranker gRPC 服务已实现
-- 后端 `F:\AgentForMc` 已支持远程 reranker 客户端和失败降级
-- 插件端 `F:\Agent4Minecraft` 无需改动
+- AgentForMc 已支持远程 reranker 客户端和失败降级
+- Agent4Minecraft 无需改动
 - 自动化测试已覆盖配置加载、鉴权、空请求、稳定排序和后端客户端排序映射
 
 ## License
