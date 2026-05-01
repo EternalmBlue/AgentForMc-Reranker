@@ -5,19 +5,32 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from agent_for_mc_reranker.runtime_paths import (
+    default_config_path,
+    default_dotenv_path,
+    ensure_external_runtime_layout,
+    resolve_runtime_path,
+    runtime_base_dir,
+)
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
     import tomli as tomllib  # type: ignore[no-redef]
 
 
-BASE_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_CONFIG_PATH = BASE_DIR / "config.toml"
+BASE_DIR = runtime_base_dir()
+DEFAULT_CONFIG_PATH = default_config_path()
 DEFAULT_MODEL_NAME = "maidalun1020/bce-reranker-base_v1"
 
 
 def _load_dotenv() -> None:
-    env_path = Path(os.getenv("RAG_RERANKER_ENV_FILE") or BASE_DIR / ".env")
+    configured_path = os.getenv("RAG_RERANKER_ENV_FILE")
+    env_path = (
+        resolve_runtime_path(configured_path, base_dir=BASE_DIR)
+        if configured_path
+        else default_dotenv_path()
+    )
     if not env_path.is_file():
         return
 
@@ -53,10 +66,7 @@ def _config_value(
 
 
 def _resolve_path(path_value: str | Path, *, base_dir: Path) -> Path:
-    path = Path(path_value)
-    if not path.is_absolute():
-        path = base_dir / path
-    return path.resolve()
+    return resolve_runtime_path(path_value, base_dir=base_dir)
 
 
 def _configure_model_cache_env(model_cache_dir: Path) -> None:
@@ -87,6 +97,10 @@ class Settings:
         config_path = _resolve_path(
             configured_path or DEFAULT_CONFIG_PATH,
             base_dir=BASE_DIR,
+        )
+        ensure_external_runtime_layout(
+            config_path=config_path,
+            copy_default_config=configured_path is None,
         )
         config = _load_toml_config(config_path)
         config_base_dir = config_path.parent
